@@ -7,5 +7,8 @@
       "path": "/api/cron/database-health",
       "schedule": "0 12 * * *"
     }
-  ]
+  ],
+  "env": {
+    "COLLECT_NETWORK_WEBSITE_IDS": "27966671-9b99-4472-9b36-a63bbd7fddd9"
+  }
 }
