@@ -8,11 +8,19 @@ import { getClientInfo, hasBlockedIp } from '@/lib/detect';
 import { truncateString } from '@/lib/format';
 import { createToken, parseToken } from '@/lib/jwt';
 import { fetchWebsite } from '@/lib/load';
+import { collectsNetwork, getNetworkIp } from '@/lib/network';
 import { parseRequest } from '@/lib/request';
 import { badRequest, forbidden, json, serverError } from '@/lib/response';
 import { anyObjectParam, urlOrPathParam } from '@/lib/schema';
 import { safeDecodeURI, safeDecodeURIComponent } from '@/lib/url';
-import { createSession, saveEvent, saveSessionData, saveSessionLink, updateSession } from '@/queries/sql';
+import { saveSessionNetwork } from '@/queries/prisma/sessionNetwork';
+import {
+  createSession,
+  saveEvent,
+  saveSessionData,
+  saveSessionLink,
+  updateSession,
+} from '@/queries/sql';
 
 interface Cache {
   websiteId: string;
@@ -20,6 +28,7 @@ interface Cache {
   visitId: string;
   iat: number;
   sessionLinkId?: string;
+  networkCaptured?: boolean;
 }
 
 // Reject strings whose first character is a spreadsheet formula trigger to
@@ -115,7 +124,7 @@ export async function POST(request: Request) {
       if (cacheHeader) {
         const result = await parseToken(cacheHeader, secret());
 
-        if (result?.type === CACHE_TOKEN_TYPE) {
+        if (result?.type === CACHE_TOKEN_TYPE && result.websiteId === websiteId) {
           cache = result;
         }
       }
@@ -133,10 +142,14 @@ export async function POST(request: Request) {
     // Carried forward in the cache token so repeat identify calls skip identity writes
     let sessionLinkId = cache?.sessionLinkId;
 
-    // Client info
+    const collectNetwork = !clickhouse.enabled && collectsNetwork(websiteId);
+    const networkIp = collectNetwork ? getNetworkIp(request.headers) : undefined;
+
+    // Client info. For opted-in sites the session and saved IP both use the
+    // trusted ingress address, never the public collection payload's override.
     const { ip, userAgent, device, browser, os, country, region, city } = await getClientInfo(
       request,
-      payload,
+      collectNetwork ? { ...payload, ip: networkIp } : payload,
     );
 
     // Bot check
@@ -149,7 +162,8 @@ export async function POST(request: Request) {
       return forbidden();
     }
 
-    const createdAt = timestamp ? new Date(timestamp * 1000) : new Date();
+    const receivedAt = new Date();
+    const createdAt = timestamp ? new Date(timestamp * 1000) : receivedAt;
     const now = Math.floor(Date.now() / 1000);
     const distinctId = truncateString(id, FIELD_LENGTH.distinctId);
 
@@ -375,8 +389,26 @@ export async function POST(request: Request) {
       });
     }
 
+    let networkCaptured = !sessionDrift && !!cache?.networkCaptured;
+    if (collectNetwork && networkIp && !networkCaptured) {
+      try {
+        networkCaptured = await saveSessionNetwork(websiteId, sessionId, networkIp, receivedAt);
+      } catch {
+        // Enrichment failure must never discard the already saved analytics event.
+        console.error('Visitor network storage unavailable');
+      }
+    }
+
     const token = createToken(
-      { websiteId, sessionId, visitId, iat, sessionLinkId, type: CACHE_TOKEN_TYPE },
+      {
+        websiteId,
+        sessionId,
+        visitId,
+        iat,
+        sessionLinkId,
+        networkCaptured,
+        type: CACHE_TOKEN_TYPE,
+      },
       secret(),
     );
 

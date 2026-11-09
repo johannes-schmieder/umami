@@ -91,6 +91,10 @@ const headers = [
     headers: apiHeaders,
   },
   {
+    source: '/api/websites/:websiteId/networks',
+    headers: [{ key: 'Cache-Control', value: 'private, no-store' }],
+  },
+  {
     source: '/:path*',
     headers: defaultHeaders,
   },
@@ -226,6 +230,7 @@ export default withNextIntl({
   output: isVercel ? undefined : 'standalone',
   outputFileTracingIncludes: {
     '/*': ['./certs/supabase-ca.crt'],
+    '/api/send': ['./geo/dbip-asn-lite.mmdb'],
   },
   typescript: {
     ignoreBuildErrors: true,

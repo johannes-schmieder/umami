@@ -378,6 +378,14 @@ export const operations = {
     ],
     hasBody: false,
   },
+  getCronDatabaseHealth: {
+    operationId: 'getCronDatabaseHealth',
+    method: 'get',
+    path: '/api/cron/database-health',
+    pathParams: [],
+    queryParams: [],
+    hasBody: false,
+  },
   getEventData: {
     operationId: 'getEventData',
     method: 'get',
@@ -2834,6 +2842,14 @@ export const operations = {
     ],
     hasBody: false,
   },
+  getWebsitesWebsiteIdNetworks: {
+    operationId: 'getWebsitesWebsiteIdNetworks',
+    method: 'get',
+    path: '/api/websites/{websiteId}/networks',
+    pathParams: ['websiteId'],
+    queryParams: ['startAt', 'endAt', 'page', 'search'],
+    hasBody: false,
+  },
   getWebsiteUtmMetrics: {
     operationId: 'getWebsiteUtmMetrics',
     method: 'get',
@@ -3623,6 +3639,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'getBoardShares'>> {
     return this.execute('getBoardShares', input, options);
+  }
+
+  /**
+   * Get cron database health
+   * Generated from the App Router handler and its request-validation source. Add a colocated contract.ts to supply exact response models and curated documentation.
+   * `GET /api/cron/database-health`
+   */
+  getCronDatabaseHealth(
+    input?: OperationInput<'getCronDatabaseHealth'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'getCronDatabaseHealth'>> {
+    return this.execute('getCronDatabaseHealth', input, options);
   }
 
   /**
@@ -4783,6 +4811,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'getWebsiteStats'>> {
     return this.execute('getWebsiteStats', input, options);
+  }
+
+  /**
+   * Get websites website id networks
+   * Generated from the App Router handler and its request-validation source. Add a colocated contract.ts to supply exact response models and curated documentation.
+   * `GET /api/websites/{websiteId}/networks`
+   */
+  getWebsitesWebsiteIdNetworks(
+    input: OperationInput<'getWebsitesWebsiteIdNetworks'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'getWebsitesWebsiteIdNetworks'>> {
+    return this.execute('getWebsitesWebsiteIdNetworks', input, options);
   }
 
   /**

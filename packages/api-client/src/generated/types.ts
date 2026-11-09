@@ -486,6 +486,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/cron/database-health': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get cron database health
+     * @description Generated from the App Router handler and its request-validation source. Add a colocated contract.ts to supply exact response models and curated documentation.
+     */
+    get: operations['getCronDatabaseHealth'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/dashboard': {
     parameters: {
       query?: never;
@@ -2012,6 +2032,26 @@ export interface paths {
      * @description Returns additional analytics for the selected page, event, visitor, or channel dimension, using the supplied date range and filters.
      */
     get: operations['getWebsiteExpandedMetrics'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/websites/{websiteId}/networks': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get websites website id networks
+     * @description Generated from the App Router handler and its request-validation source. Add a colocated contract.ts to supply exact response models and curated documentation.
+     */
+    get: operations['getWebsitesWebsiteIdNetworks'];
     put?: never;
     post?: never;
     delete?: never;
@@ -6144,6 +6184,71 @@ export interface operations {
             trackerScriptName: string;
             updatesDisabled: boolean;
           };
+        };
+      };
+    };
+  };
+  getCronDatabaseHealth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The operation completed successfully. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @description Whether the operation succeeded. */
+                ok: boolean;
+              }
+            | {
+                checkedAt: string;
+                /** @description Whether the operation succeeded. */
+                ok: boolean;
+              };
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Service unavailable. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "service-unavailable",
+           *         "message": "Service unavailable.",
+           *         "status": 503
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
         };
       };
     };
@@ -17561,6 +17666,106 @@ export interface operations {
            *         "code": "unauthorized",
            *         "message": "Unauthorized.",
            *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  getWebsitesWebsiteIdNetworks: {
+    parameters: {
+      query: {
+        /** @description End of the date range as a Unix timestamp in milliseconds. */
+        endAt: number;
+        /** @description Page number, starting at 1. */
+        page?: number;
+        /** @description Search text used to filter results. */
+        search?: string;
+        /** @description Start of the date range as a Unix timestamp in milliseconds. */
+        startAt: number;
+      };
+      header?: never;
+      path: {
+        /** @description ID of the website. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The operation completed successfully. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | {
+                /** @description Error details returned when the operation fails. */
+                error: string;
+              }
+            | {
+                /** @description Number of matching records. */
+                count: unknown;
+                /** @description Data returned by the operation. */
+                data: unknown;
+                /** @description Page number, starting at 1. */
+                page: unknown;
+                /** @description Number of results per page. */
+                pageSize: number;
+              };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Forbidden. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "forbidden",
+           *         "message": "Forbidden.",
+           *         "status": 403
            *       }
            *     }
            */

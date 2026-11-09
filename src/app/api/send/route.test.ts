@@ -21,6 +21,8 @@ import {
 } from '@/queries/sql';
 import { POST } from './route';
 
+vi.mock('@/queries/prisma/sessionNetwork', () => ({ saveSessionNetwork: vi.fn() }));
+
 vi.mock('@/lib/clickhouse', () => ({ default: { enabled: false } }));
 
 vi.mock('@/lib/detect', () => ({
@@ -101,7 +103,13 @@ function makeComputedSessionId(
   const createdAt = new Date(timestamp * 1000);
   const sessionSalt = getSalt(process.env.SALT_ROTATION || 'month', createdAt);
 
-  return uuid(sourceId, defaultClientInfo.ip, defaultClientInfo.userAgent, sessionSalt, distinctId ?? '');
+  return uuid(
+    sourceId,
+    defaultClientInfo.ip,
+    defaultClientInfo.userAgent,
+    sessionSalt,
+    distinctId ?? '',
+  );
 }
 
 beforeEach(() => {
@@ -921,5 +929,59 @@ describe('error handling', () => {
       error: { code: 'server-error', status: 500 },
     });
     consoleLog.mockRestore();
+  });
+});
+
+describe('private network capture', () => {
+  test('saves trusted ingress after the event without exposing IP in the response', async () => {
+    const { saveSessionNetwork } = await import('@/queries/prisma/sessionNetwork');
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('COLLECT_NETWORK_WEBSITE_IDS', WEBSITE_ID);
+    vi.mocked(saveSessionNetwork).mockResolvedValue(true);
+    try {
+      const response = await callPOST(
+        { type: 'event', payload: { website: WEBSITE_ID, url: '/' } },
+        { headers: { 'x-vercel-forwarded-for': '8.8.8.8' } },
+      );
+      expect(response.status).toBe(200);
+      expect(saveSessionNetwork).toHaveBeenCalledWith(
+        WEBSITE_ID,
+        expect.any(String),
+        '8.8.8.8',
+        expect.any(Date),
+      );
+      expect(saveEvent).toHaveBeenCalled();
+      const body = await response.json();
+      expect(JSON.stringify(body)).not.toContain('8.8.8.8');
+      const token = await parseToken(body.cache, secret());
+      expect(token.networkCaptured).toBe(true);
+      vi.mocked(saveSessionNetwork).mockClear();
+      await callPOST(
+        { type: 'event', payload: { website: WEBSITE_ID, url: '/next' } },
+        { headers: { 'x-vercel-forwarded-for': '8.8.8.8', 'x-umami-cache': body.cache } },
+      );
+      expect(saveSessionNetwork).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+  test('keeps a pageview when network storage fails and retries later', async () => {
+    const { saveSessionNetwork } = await import('@/queries/prisma/sessionNetwork');
+    vi.stubEnv('VERCEL', '1');
+    vi.stubEnv('COLLECT_NETWORK_WEBSITE_IDS', WEBSITE_ID);
+    vi.mocked(saveSessionNetwork).mockRejectedValue(new Error('unavailable'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const response = await callPOST(
+        { type: 'event', payload: { website: WEBSITE_ID, url: '/' } },
+        { headers: { 'x-vercel-forwarded-for': '8.8.8.8' } },
+      );
+      expect(response.status).toBe(200);
+      expect(saveEvent).toHaveBeenCalled();
+      const body = await response.json();
+      expect((await parseToken(body.cache, secret())).networkCaptured).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

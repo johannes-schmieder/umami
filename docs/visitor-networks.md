@@ -1,0 +1,11 @@
+# Private visitor networks
+
+This fork can retain public visitor IPs for explicitly opted-in websites and enrich them with the AS organization and number. This changes Umami's default data collection. Network ownership is not a person's identity or employer.
+
+Production enablement: `COLLECT_NETWORK_WEBSITE_IDS` is a comma-separated website-ID allowlist. Vercel collection uses only its `x-vercel-forwarded-for` header. Other installations must set a trusted `CLIENT_IP_HEADER` and prevent clients from overriding it. Invalid, private, reserved, and missing addresses are not stored. Payload IP overrides are ignored for opted-in websites. Existing tracker Do Not Track and domain restrictions still apply.
+
+Data lives in the private PostgreSQL `session_network` table and is accessible in **Networks** under the website. The API is `/api/websites/:websiteId/networks?startAt=...&endAt=...` with optional `search` and `page`. Only authenticated owners/admins or team users with website-update permission may read it. Share tokens cannot access it, and ordinary session/event APIs and exports do not expose these fields. Supabase public roles have no privileges and RLS is enabled. Session deletion cascades to its network record. Retention follows the existing analytics retention; no automatic deletion window was introduced.
+
+Lookups are offline using [DB-IP IP to ASN Lite](https://db-ip.com/db/download/ip-to-asn-lite), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). IP Geolocation by [DB-IP](https://db-ip.com). No visitor IP is sent to DB-IP. The build downloads that month's dataset; redeploy monthly to refresh it. The dataset's build date is retained with each lookup. Missing results appear as Unknown. A failed lookup still saves the IP and is retried on a subsequent request; database failures do not prevent ordinary pageviews.
+
+Migration 27 is additive and includes a real cascading foreign key, because Prisma's relation emulation does not cover all raw SQL cleanup paths. Back up/restore-test before applying. Production migrations remain manual, with `SKIP_DB_MIGRATION=1`. To stop new collection, remove the website from the allowlist and redeploy; existing records remain until explicitly deleted.

@@ -15,9 +15,9 @@
   },
   "scripts": {
     "dev": "dotenv next dev --turbo",
-    "build": "npm-run-all check:env build:db check:db build:tracker build:recorder build:geo build:openapi build:packages build:app",
+    "build": "npm-run-all check:env build:db check:db build:tracker build:recorder build:geo build:network build:openapi build:packages build:app",
     "start": "next start",
-    "build:docker": "npm-run-all build:db build:tracker build:recorder build:geo build:openapi build:packages build:app",
+    "build:docker": "npm-run-all build:db build:tracker build:recorder build:geo build:network build:openapi build:packages build:app",
     "start:docker": "npm-run-all check:db update:tracker start:server",
     "start:env": "node scripts/start-env.js",
     "start:server": "node server.js",
@@ -66,7 +66,8 @@
     "db:seed": "tsx scripts/seed-data.ts",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "check": "biome check --write"
+    "check": "biome check --write",
+    "build:network": "node scripts/build-network.js"
   },
   "cacheDirectories": [
     ".next/cache"

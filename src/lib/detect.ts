@@ -5,6 +5,7 @@ import isLocalhost from 'is-localhost-ip';
 import maxmind from 'maxmind';
 import { UAParser } from 'ua-parser-js';
 import { getIpAddress, stripPort } from '@/lib/ip';
+import { collectsNetwork, getNetworkIp } from '@/lib/network';
 import { safeDecodeURIComponent } from '@/lib/url';
 
 const MAXMIND = 'maxmind';
@@ -135,8 +136,14 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
 
 export async function getClientInfo(request: Request, payload: Record<string, any>) {
   const userAgent = payload?.userAgent || request.headers.get('user-agent');
-  const ip = payload?.ip || getIpAddress(request.headers);
-  const location = await getLocation(ip, request.headers, !!payload?.ip);
+  const ip = collectsNetwork(payload?.website)
+    ? getNetworkIp(request.headers)
+    : payload?.ip || getIpAddress(request.headers);
+  const location = await getLocation(
+    ip,
+    request.headers,
+    !!payload?.ip && !collectsNetwork(payload?.website),
+  );
   const country = safeDecodeURIComponent(location?.country);
   const region = safeDecodeURIComponent(location?.region);
   const city = safeDecodeURIComponent(location?.city);

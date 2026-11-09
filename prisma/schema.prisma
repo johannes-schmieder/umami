@@ -66,6 +66,7 @@ model Session {
   distinctId String?   @map("distinct_id") @db.VarChar(50)
   createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  network       SessionNetwork?
   websiteEvents WebsiteEvent[]
   sessionData   SessionData[]
   revenue       Revenue[]
@@ -220,12 +221,12 @@ model SessionData {
   website Website @relation(fields: [websiteId], references: [id])
   session Session @relation(fields: [sessionId], references: [id])
 
+  @@unique([sessionId, dataKey])
   @@index([createdAt])
   @@index([websiteId])
   @@index([sessionId])
   @@index([sessionId, createdAt])
   @@index([websiteId, createdAt, dataKey])
-  @@unique([sessionId, dataKey])
   @@map("session_data")
 }
 
@@ -531,4 +532,20 @@ model AppSetting {
   value String
 
   @@map("app_setting")
+}
+
+// Private, opt-in network enrichment; never included in public analytics APIs.
+model SessionNetwork {
+  sessionId    String    @id @map("session_id") @db.Uuid
+  websiteId    String    @map("website_id") @db.Uuid
+  ipAddress    String    @map("ip_address") @db.VarChar(45)
+  organization String?   @db.VarChar(255)
+  asn          String?   @db.VarChar(16)
+  source       String    @db.VarChar(32)
+  databaseDate DateTime? @map("database_date") @db.Timestamptz(6)
+  capturedAt   DateTime  @default(now()) @map("captured_at") @db.Timestamptz(6)
+  session      Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@map("session_network")
 }
